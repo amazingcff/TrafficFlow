@@ -48,5 +48,17 @@
         <artifactId>mysql-connector-java</artifactId>
         <version>${mysql.version}</version>
     </dependency>
+    
+    <dependency>
+        <groupId>org.apache.kafka</groupId>
+        <artifactId>kafka-clients</artifactId>
+        <version>${kafka.version}</version>
+    </dependency>
+ 
+    <dependency>
+        <groupId>org.apache.kafka</groupId>
+        <artifactId>kafka_${scala.version}</artifactId>
+        <version>${kafka.version}</version>
+    </dependency>
   </dependencies>
 </project>

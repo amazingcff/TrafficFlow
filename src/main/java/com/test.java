@@ -1,13 +1,19 @@
 package com;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.WindowedStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010;
 
 import utils.JdbcUtil;
 
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
+import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.api.java.tuple.Tuple2;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -31,15 +37,36 @@ public class test {
         //props.setProperty("auto.offset.reset", "earliest");//从latest开始消费
 
         DataStream<String> transction = env.addSource(new FlinkKafkaConsumer010<String>("testtopic", new SimpleStringSchema(), props));
-
+        
+        //异常筛选
+        OutlierDiscovery_3 od=new OutlierDiscovery_3();
+        DataStream<String> afterOd=od.Handle(transction);
+        
+        //行驶用户识别
+        
+        //道路计算
+        
+        
         transction.rebalance().map(new MapFunction<String, Object>() {
 			private static final long serialVersionUID = 1L;
 			public String map(String value)throws IOException, SQLException{
+				
 				System.out.println(value);
 				JdbcUtil.writeIntoMysql(value);
 				return null;
            }
         });
-       env.execute();
+        
+        WindowedStream<String, Tuple, TimeWindow> timeWindow = 
+        		transction.keyBy(0).timeWindow(Time.minutes(30), Time.seconds(60));
+        
+        //timeWindow.apply(JdbcUtil.writeIntoMysql()).print();
+        
+        try {
+            // 转换算子都是lazy init的, 最后要显式调用 执行程序
+            env.execute();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 	}
 }
